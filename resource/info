@@ -1,0 +1,10 @@
+## 서버에 사용되는 정보를 key=value 형태로 할당되어 사용할 수 있게 한다.
+## DB서버관련 정보.
+db_driver=oracle.jdbc.driver.OracleDriver
+db_ip=jdbc:oracle:thin:@192.168.0.5:1521:xe
+db_id=final
+db_pass=final
+
+## 업로드할 파일서버 위치지정.
+upload=C:\\z01_web\\workspace\\project04\\WebContent\\i01_upload\\
+tmpupload=C:\\z01_web\\workspace\\.metadata\\.plugins\\org.eclipse.wst.server.core\\tmp0\\wtpwebapps\\project04\\i01_upload\\

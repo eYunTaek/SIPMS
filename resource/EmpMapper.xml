@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="springweb.a03_data.dao.A01_EmpDao">
+	<resultMap type="emp" id="empMap" />
+	<resultMap type="msg" id="msgMap" />
+	<select id="login" resultType="emp" parameterType="emp">
+		SELECT * FROM EMP WHERE empno = #{empno} AND pass = #{pass}
+	</select>
+	
+	<select id="empCnt" parameterType="search" resultType="int">
+		SELECT count(*) FROM emp WHERE 1=1
+		<if test="empno!=null and empno!=''">
+		and empno like '%'||#{empno}||'%'
+		</if>
+		<if test="ename != null and ename !=''">
+		AND ename LIKE '%'||#{ename}||'%'
+		</if>
+	</select>
+	<!-- 사원 목록(페이징) -->
+	<select id="empList" parameterType="search" resultMap="empMap">
+		SELECT * FROM (select ROWNUM rn,a.* from emp a
+		where 1=1
+		<if test="empno!=null and empno!=''">
+		and empno like '%'||#{empno}||'%'
+		</if>
+		<if test="ename!=null and ename!=''">
+		and ename like '%'||#{ename}||'%'
+		</if>
+		order by empno) WHERE rn BETWEEN #{start} AND #{end}
+	</select>
+	<!-- 사원 목록(메세지 보낼사원 리스트) -->
+	<select id="msgEmpList" parameterType="emp" resultMap="empMap">
+		select * from emp
+		where 1=1
+	</select>
+	<!-- 사원 등록 -->
+	<insert id="insertEmp" parameterType="emp">
+		insert into emp(empno, ename, pass, civilno, phone, posi, sal, hiredate, pjdo, permi) values(
+			emp_seq.nextval, #{ename}, #{pass}, #{civilno}, #{phone}, #{posi}, #{sal}, sysdate, 'N', '사원'
+		)
+	</insert>
+	<!-- 사원정보 조회 -->
+	<select id="getEmp" parameterType="int" resultMap="empMap">
+		select empno, ename, pass, civilno, phone, posi, sal, hiredate,
+				to_char(regdate, 'YYYY-MM-DD') as regdate, pjdo, permi
+		from emp
+		where empno = #{empno}
+	</select>
+	<!-- 사원페이지(프로젝트 현황 -> 프로젝트 상세보기) : 사원의 개인업무를 보여줍니다. -->
+	<select id="getmywork" parameterType="int" resultMap="empMap">
+		SELECT  a.wno,a.EMPNO,a.WINFO,a.STAGE,to_char(a.STDTE, 'YYYY-MM-DD') as STDTE,
+		to_char(a.EDDTE, 'YYYY-MM-DD') as EDDTE,a.SUBMI,a.COMPLE,b.FNAME, to_char(b.sbmdte, 'YYYY-MM-DD') as sbmdte
+		FROM WORK a, SUBMISSION b
+		WHERE  a.WNO = b.WNO(+) and a.empno = #{empno} order by a.wno
+	</select>
+	<!-- 사원개인업무 D-day에 사용하기위해 eddte만 뽑아냄. -->
+	<select id="getmywork2" parameterType="int" resultType="emp">
+		SELECT to_char(a.EDDTE, 'YYYY-MM-DD') as EDDTE,a.winfo
+		FROM WORK a, SUBMISSION b
+		WHERE  a.WNO = b.WNO(+) and a.empno = #{empno} order by a.wno
+	</select>
+	<!-- 사원의 파일첨부 여부에따라 개인 업무 페이지 수정 Y -->
+	<update id="updatemywork" parameterType="int">
+	update WORK set SUBMI = 'Y' where wno = #{wno}
+	</update>
+	<!-- 사원의 파일첨부 여부에따라 개인 업무 페이지 수정 N -->
+	<update id="updatemywork2" parameterType="int">
+	update WORK set SUBMI = 'N' where wno = #{wno}
+	</update>
+	
+	<!-- 사원정보 수정 -->
+	<update id="updateEmp" parameterType="emp">
+		update emp
+		set ename = #{ename},
+			<if test="pass!=null and pass!=''">
+			pass = #{pass},
+			</if>
+			civilno = #{civilno},
+			phone = #{phone},
+			posi = #{posi},
+			sal = #{sal},
+			<if test="regdate!=null and regdate!=''">
+			regdate = #{regdate},
+			</if>
+			pjdo = #{pjdo},
+			permi = #{permi}
+		where empno = #{empno}
+	</update>
+	<update id="uptLno" parameterType="emp">
+		update team
+		set lno = #{empno}
+		where tno = (select tno from team_detail where empno = #{empno})
+	</update>
+	<update id="uptPosi" parameterType="emp">
+		update team_detail
+		set position = #{permi}
+		where empno = #{empno}
+	</update>
+	<!-- 사원 삭제 -->
+	<delete id="deleteEmp" parameterType="int">
+		delete from emp 
+		where empno = #{empno}
+	</delete>
+	<!-- 사원(내정보 보기) -->
+	<select id="empinfo" parameterType="int" resultType="emp">
+		select * from emp where empno = #{empno}
+	</select>
+		<!-- 첨부파일 등록 -->
+	<insert id="uploadFile" parameterType="emp">
+		INSERT INTO SUBMISSION VALUES (#{wno},#{fname},SYSDATE)
+	</insert>
+	<!-- 첨부파일 삭제 -->
+	<delete id="deleteFile" parameterType="int">
+	 delete from SUBMISSION where wno = #{wno}
+	</delete>
+	
+	<!-- 팀에 추가할 사원 목록 -->
+	<select id="addMemList" resultMap="empMap">
+		select * from emp
+		where pjdo = 'N'
+		order by empno
+	</select>
+	
+	<select id="fileList" resultMap="empMap">
+		SELECT * FROM SUBMISSION WHERE wno = #{wno}
+	</select>
+	<!-- 메세지 수 -->
+	<select id="totCnt" parameterType="msg" resultType="int">
+		SELECT count(*) FROM message a, emp b WHERE a.empno = b.empno AND a.gno=#{empno}
+		<if test="ename != null and ename !=''">
+		AND ename LIKE '%'||#{ename}||'%'
+		</if>
+	</select>
+	<!-- 메시지함 리스트 -->
+	<select id="messageList" parameterType="msg" resultMap="msgMap">
+		SELECT * FROM
+		(SELECT ROWNUM rn,a.mno,c.ename,c.posi,a.TITLE,a.REVSTATUS,a.SDTE FROM MESSAGE a, emp b,(SELECT * FROM message a,emp b WHERE a.empno = b.empno AND a.gno=#{empno}) c 
+		WHERE a.gno = b.empno AND a.mno=c.mno AND a.gno =#{empno} 
+		<if test="ename != null and ename !=''">
+		AND c.ename LIKE '%'||#{ename}||'%'
+		</if>
+		order by mno DESC)
+		WHERE rn BETWEEN #{start} AND #{end}
+	</select>
+	<!-- 메시지 내용 -->
+	<select id="messageDetail" parameterType="int" resultType="emp">
+		SELECT a.mno,(SELECT ename FROM emp WHERE empno = a.EMPNO) ename,(SELECT posi FROM emp WHERE empno = a.EMPNO) posi,a.TITLE,a.CONTENT,a.REVSTATUS,a.SDTE FROM message a, emp b WHERE (a.gno = b.EMPNO) AND a.mno = #{mno}
+	</select>
+	<!-- 안읽은 메세지 카운트 -->
+	<select id="messageCount" parameterType="int" resultType="int">
+		SELECT count(*) FROM message a, emp b WHERE (a.gno = b.EMPNO) AND a.REVSTATUS ='N' AND b.empno = #{empno}
+	</select>
+	<!-- 메세지 수신여부 업데이트 -->
+	<update id="messageStatus" parameterType="int">
+		UPDATE message SET REVSTATUS = 'Y' WHERE mno = #{mno}
+	</update>
+	<!-- 메세지 보내기 -->
+	<insert id="messageSend" parameterType="emp">
+		INSERT INTO message values(msg_seq.nextval,#{empno},#{gno},#{title},#{content},DEFAULT,DEFAULT)
+	</insert>
+	<!-- 메세지 삭제 -->
+	<delete id="messageDelete" parameterType="int">
+		DELETE FROM message WHERE mno=#{mno}
+	</delete>
+	
+	<!-- (관리자) 프로젝트 정보 -->
+	<select id="prjInfo" parameterType="int" resultMap="empMap">
+		SELECT pjno, tno, pjtitle, to_char(stdte, 'yyyy-mm-dd') AS stdte, to_char(eddte, 'yyyy-mm-dd') AS eddte, allstage, stage
+		FROM project
+		WHERE tno = #{tno}
+	</select>
+	<!-- 팀장 이름 뽑아오기. -->
+	<select id="getLeaderName" parameterType="int" resultType="emp">
+		SELECT a.ename
+		FROM EMP a, TEAM_DETAIL b, TEAM c
+		WHERE a.EMPNO = b.EMPNO AND c.TNO = b.TNO AND b.POSITION = '팀장' AND c.PJNO = #{pjno}
+	</select>
+	
+	
+	
+</mapper>
+
+

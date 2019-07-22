@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="springweb.a03_data.dao.A03_ProjectDao">
+	<resultMap type="project" id="projectMap" />
+	<!-- 사원 목록 -->
+	<select id="prjList" resultMap="projectMap">
+		select pjno, tno, pjtitle, comname, area, to_char(stdte, 'YYYY-MM-DD') as stdte,
+				to_char(eddte, 'YYYY-MM-DD') as eddte, cost, allstage, stage, comple
+		from project
+		order by pjno
+	</select>
+	<insert id="prjInsert" parameterType="project">
+		insert into project values(
+			project_seq.nextval, #{tno}, #{pjtitle}, #{comname}, #{area},
+			#{stdte}, #{eddte}, #{cost}, #{allstage}, 1, 'N'
+		)
+	</insert>
+	<update id="pjnoUpdate" parameterType="project">
+		update team
+		set pjno = (select pjno from project where tno=#{tno})
+		where tno = #{tno}
+	</update>
+	<select id="prjDetail" parameterType="int" resultMap="projectMap">
+		select pjno, tno, pjtitle, comname, area, to_char(stdte, 'YYYY-MM-DD') as stdte,
+				to_char(eddte, 'YYYY-MM-DD') as eddte, cost, allstage, stage, comple
+		from project
+		where pjno = #{pjno}
+	</select>
+	<update id="prjUpdate" parameterType="project">
+		update project
+		set tno = #{tno},
+			pjtitle = #{pjtitle},
+			comname = #{comname},
+			area = #{area},
+			stdte = #{stdte},
+			eddte = #{eddte},
+			cost = #{cost},
+			allstage = #{allstage},
+			stage = #{stage},
+			comple = #{comple}
+		where pjno = #{pjno}
+	</update>
+	<delete id="prjDelete" parameterType="int">
+		delete from project 
+		where pjno = #{pjno}
+	</delete>
+	<select id="manageCalPrjList" resultMap="projectMap">
+		select pjtitle as title,to_char(stdte, 'YYYY-MM-DD') as stdte,
+				to_char(eddte, 'YYYY-MM-DD') as eddte
+		from project where comple='N'
+	</select>
+	<select id="indiCalPrjList" parameterType="int" resultMap="projectMap">
+		select a.pjtitle as title,to_char(a.stdte, 'YYYY-MM-DD') as stdte,
+				to_char(a.eddte, 'YYYY-MM-DD') as eddte
+		from PROJECT a,TEAM b,TEAM_DETAIL c WHERE (a.tno = b.tno) AND (b.tno = c.TNO) AND c.EMPNO = #{empno} and a.comple='N'
+	</select>
+	
+	<!-- 차트 -->
+	<resultMap type="project" id="prjMap">
+		<result column="years" property="labels" />
+		<result column="totcost" property="data" />
+	</resultMap>
+	<select id="chartData" resultMap="prjMap">
+		SELECT substr(to_char(stdte, 'yyyy-mm-dd'), 1, 4) AS years, sum(cost2) AS totcost
+		FROM (
+			SELECT a.*, CASE b.comple WHEN 'N' THEN 0 ELSE b.cost END AS cost2
+			FROM project a, project b
+			WHERE a.pjno = b.pjno
+		)
+		GROUP BY substr(to_char(stdte, 'yyyy-mm-dd'), 1, 4)
+		ORDER BY substr(to_char(stdte, 'yyyy-mm-dd'), 1, 4)
+	</select>
+	
+	<select id="teamStats" resultMap="prjMap">
+		SELECT tno AS labels,sum(cost) AS data FROM PROJECT where comple='Y' GROUP BY tno order by tno
+	</select>
+</mapper>

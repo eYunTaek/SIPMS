@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="springweb.a03_data.dao.A02_TeamDao">
+	<resultMap type="emp" id="empMap" />
+	<resultMap type="team" id="teamMap" />
+	<select id="teamMemberList" parameterType="emp" resultMap="empMap">
+		SELECT * FROM team_detail a, emp b
+		WHERE (a.EMPNO = b.EMPNO) 
+		AND a.tno=(SELECT b.tno FROM emp a, TEAM_DETAIL b WHERE (a.EMPNO=b.EMPNO) AND a.empno =#{empno}) ORDER BY POSITION desc,a.empno
+	</select>
+<!-- 사원페이지(프로젝트 현황) : 사원의 팀프로젝트 전체현황(간략현황)을 보여줍니다. -->
+	<select id="getPrj" parameterType="int" resultType="team">
+		SELECT a.tno,a.pjno,a.PJTITLE,a.COMNAME,a.area,to_char(a.STDTE,'YYYY-MM-DD') AS stdte,to_char(a.eddte,'YYYY-MM-DD') AS eddte,a.COST FROM project a, TEAM_DETAIL b WHERE (a.TNO = b.TNO) AND b.EMPNO = #{empno}
+	</select>
+	<select id="getTeam" parameterType="int" resultMap="teamMap">
+	SELECT d.PJNO,a.wno,a.STAGE,a.WINFO,d.PJTITLE,d.COMNAME,d.AREA,d.COST,d.ALLSTAGE,to_char(a.STDTE,'YYYY-MM-DD') AS stdte,to_char(a.EDDTE,'YYYY-MM-DD') AS eddte,
+	a.SUBMI,a.COMPLE FROM WORK a,team b,TEAM_DETAIL c, PROJECT d
+	WHERE (a.empno = c.empno) AND (c.tno = d.TNO) AND (b.PJNO = d.PJNO) AND a.empno=#{empno}
+	</select>
+
+	<select id="teamWorkGrant" parameterType="int" resultType="team">
+		SELECT *  FROM emp a, TEAM_DETAIL b, team c , PROJECT d  
+		WHERE (a.EMPNO = b. EMPNO) AND (b.tno = c.tno) AND (c.PJNO = d.PJNO) AND a.empno=#{empno}
+	</select>
+	<select id="winfo" parameterType="int" resultType="team">
+		SELECT a.WINFO,a.stDTE,to_char(a.EDDTE,'YYYY-MM-DD') as eddte,a.stage FROM WORK a, emp b WHERE (a.EMPNO = b.EMPNO) AND b.empno=#{empno}
+	</select>
+	<insert id="workGrant" parameterType="team">
+		INSERT INTO WORK values(work_seq.nextval,#{empno},#{winfo},#{stage},SYSDATE,#{eddte},'N','N',#{pjno})
+	</insert>
+	<update id="teamDetailupt" parameterType="team">
+		UPDATE TEAM_DETAIL SET wno=work_seq.currval, INDISTAGE=#{stage} WHERE empno=#{empno}
+	</update>
+	<delete id="workDel" parameterType="int">
+		DELETE FROM WORK WHERE wno=#{wno}
+	</delete>
+	<update id="workDel2" parameterType="int">
+		UPDATE TEAM_DETAIL SET wno=null WHERE wno=#{wno}
+	</update>
+	<update id="workUpt" parameterType="team">
+		UPDATE WORK SET winfo=#{winfo},stdte=#{stdte},eddte=#{eddte},submi=#{submi},comple=#{comple} WHERE wno=#{wno}
+	</update>
+	<select id="getWork" parameterType="int" resultType="team">
+		SELECT * FROM WORK WHERE WNO = #{wno}
+	</select>
+	
+	<!-- 팀 목록 조회 -->
+	<select id="teamList" resultMap="teamMap">
+		SELECT a.tno, b.pjtitle, b.area, to_char(b.stdte, 'YYYY-MM-DD') as stdte, to_char(b.eddte, 'YYYY-MM-DD') as eddte, b.allstage, b.pjno,b.stage,c.showPercent,a.pjno
+	FROM team a, project b ,(SELECT a.pjno,round(b.프로젝트완료/a.프로젝트전체임무수*100) AS showPercent FROM
+	(SELECT a.cnt*b.allstage AS 프로젝트전체임무수, b.pjno FROM
+	(SELECT count(*) AS cnt,a.PJNO FROM PROJECT a, TEAM_DETAIL b WHERE a.TNO = b.TNO GROUP BY a.pjno) a,
+	(SELECT ALLSTAGE,a.pjno FROM PROJECT a, team b WHERE a.pjno = b.pjno) b WHERE a.pjno = b.pjno) a,
+	(SELECT count(b.comple) AS 프로젝트완료,a.PJNO FROM PROJECT a ,WORK b,team c
+	WHERE b.pjno = a.pjno AND a.tno=c.tno AND b.COMPLE ='Y' GROUP BY a.pjno) b WHERE a.PJNO = b.pjno) c
+	WHERE a.tno = b.tno AND a.pjno = b.pjno AND a.pjno=c.pjno(+) and b.comple='N'
+	<if test="tno!=null and tno!=''">
+		and a.tno like '%'||#{tno}||'%'
+	</if>
+	<if test="pjtitle!=null and pjtitle!=''">
+		and b.pjtitle like '%'||#{pjtitle}||'%'
+	</if>
+	order by a.tno
+	</select>
+	<!-- 팀 상세 -->
+	<select id="teamDetail" parameterType="int" resultMap="teamMap">
+		SELECT d.empno, d.ename, c.position, c.indistage,e.cnt
+		FROM project a, team b, team_detail c, emp d,(SELECT COUNT(*) AS cnt FROM TEAM_DETAIL WHERE tno = #{tno}) e
+		WHERE a.tno = c.tno
+		AND a.pjno = b.pjno
+		AND c.tno = #{tno}
+		AND d.empno = c.empno
+		ORDER BY c.position desc, d.empno
+	</select>
+	<!-- 프로젝트 정보 -->
+	<select id="prjInfo" parameterType="int" resultMap="teamMap">
+		SELECT pjno, tno, pjtitle, to_char(stdte, 'yyyy-mm-dd') AS stdte, to_char(eddte, 'yyyy-mm-dd') AS eddte, allstage, stage
+		FROM project
+		WHERE tno = #{tno}
+	</select>
+	<!-- 팀원 추가 -->
+	<insert id="addMem" parameterType="team">
+		insert into team_detail values(
+			#{tno}, #{empno}, null, '팀원', 1
+		)
+	</insert>
+	<!-- 프로젝트 여부 수정 -->
+	<update id="uptPjdo" parameterType="int">
+		UPDATE emp
+		SET pjdo = 'Y'
+		WHERE empno = #{empno}
+	</update>
+	<!-- 파일 정보 조회 -->
+	<select id="fileManage" parameterType="int" resultType="team">
+		SELECT * FROM submission a, WORK b WHERE (a.WNO = b.WNO) AND a.wno=#{wno}
+	</select>
+	<!-- 업무 정보 -->
+	<select id="showWork" parameterType="int" resultMap="teamMap">
+		SELECT a.winfo, to_char(a.stdte,'YYYY-MM-DD') AS stdte, to_char(a.eddte,'YYYY-MM-DD') as eddte, a.stage, a.submi, a.comple
+		FROM work a, emp b 
+		WHERE (a.EMPNO = b.EMPNO) AND b.empno=#{empno}
+	</select>
+	<!-- 프로젝트진행률(%처리) -->
+	<select id="showPercent" parameterType="int" resultType="team">
+	SELECT round(pjsucss/pjtotal*100) AS showPercent FROM
+	(SELECT a.cnt*b.allstage AS pjtotal FROM
+	(SELECT count(*) AS cnt FROM PROJECT a, TEAM_DETAIL b WHERE a.TNO = b.TNO AND b.tno=(SELECT tno FROM TEAM_DETAIL WHERE empno=#{empno})) a,
+	(SELECT a.ALLSTAGE FROM PROJECT a, TEAM b, TEAM_DETAIL c  WHERE (a.pjno = b.pjno) AND (b.tno = c.tno) AND c.empno =#{empno} ) b) a,
+	(SELECT count(*) AS pjsucss FROM PROJECT a ,WORK b,team c
+	WHERE b.pjno = a.pjno AND a.tno=c.tno AND b.COMPLE ='Y' AND a.tno = (SELECT tno FROM TEAM_DETAIL WHERE empno=#{empno})) b
+	</select>
+	
+	<select id="crtTeam" parameterType="int">
+		insert into team(tno) values(#{tno})
+	</select>
+	<select id="tlist" resultMap="teamMap">
+		select tno
+		from team
+		order by tno
+	</select>
+	<!-- 팀정보(팀이 가지고있는 프젝 정보) -->
+	<select id="tprj" parameterType="int" resultType="team">
+		select * from team where tno=#{tno}
+	</select>
+	<delete id="delPrj" parameterType="int">
+		delete from project where tno = #{tno}
+	</delete>
+	<delete id="delTeam" parameterType="int">
+		delete from team where tno = #{tno}
+	</delete>
+	
+</mapper>

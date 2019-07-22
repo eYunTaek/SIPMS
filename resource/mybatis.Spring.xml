@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<!-- mybatis에서 사용하는 xml tag를 설정하는 부분 
+1. mybatis를 통해 처리되는 모든 모듈에서 사용되는 공통 VO 선언,
+	1) 간략한 VO setting
+		alias="emp" type="springweb.z01_vo.Emp"
+		: Emp Vo 객체를 간략화하여 emp라는 이름으로 지정하여 처리한다
+	2) 각 모듈 즉 데이터 처리 단위별로 xml파일을 설정
+		ex) emp관련 내용 sql 처리, board관련 sql 처리
+   	  - 일반적으로는 dao(interface) 단위로 하나씩 mapper.xml를 설정한다.
+-->
+<configuration>
+	<typeAliases>
+		<typeAlias alias="emp" type="springweb.a02_vo.A01_Emp" />
+		<typeAlias alias="team" type="springweb.a02_vo.A02_Team" />
+		<typeAlias alias="project" type="springweb.a02_vo.A03_Project" />
+		<typeAlias alias="msg" type="springweb.a02_vo.A05_Message" />
+		<typeAlias alias="search" type="springweb.a02_vo.A06_Search" />
+	</typeAliases>
+	<mappers>
+		<mapper resource="resource/EmpMapper.xml"/>
+		<mapper resource="resource/TeamMapper.xml"/>
+		<mapper resource="resource/ProjectMapper.xml"/>
+	</mappers>
+</configuration>
+
