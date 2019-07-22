@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- spring에서 쓰이는 객체들을 선언.. -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+       	http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+       	http://www.springframework.org/schema/aop
+       	http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+       	http://www.springframework.org/schema/context
+       	http://www.springframework.org/schema/context/spring-context-4.0.xsd
+  		http://www.springframework.org/schema/mvc
+		http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd     
+        http://www.springframework.org/schema/util
+       	http://www.springframework.org/schema/util/spring-util-4.0.xsd
+   		http://www.springframework.org/schema/websocket
+		http://www.springframework.org/schema/websocket/spring-websocket.xsd
+       	http://www.springframework.org/schema/task
+       	http://www.springframework.org/schema/task/spring-task.xsd">
+	<context:annotation-config />
+	<context:component-scan base-package="springweb">
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Service" />
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Repository" />
+	</context:component-scan>
+	
+	<context:property-placeholder location="classpath:/resource/info"/>
+	
+		<!-- 파일 업로드를 위한 viewresolver -->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver"/>
+   		<!--  파일 다운로드 viewer -->
+   	<bean id= "downloadViewer" class="springweb.v01_viewer.DownloadViewer"/>
+   		
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<!--view를 사용할 때, 공통부분을 정의하자 
+		InternalResourceViewResolver ir = new InternalResourceViewResolver();
+		ir.setSuffix("");
+		ir.setPreffix(".jsp");
+		ir.setOrder("1");-->
+		
+		<!--접두어 처리-->
+		<property name="prefix" value="WEB-INF/view/"/>
+		<!-- 접미어 처리 .jsp -->
+		<property name="suffix" value=".jsp"/>
+		<!-- 우선순위 설정 2번째 -->
+		<property name="order" value="1"/>
+	</bean>
+	<bean id="btnViewResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver">
+		<property name="order" value="0"/>
+	</bean>
+	<!-- java의 Object를 json문자열로 자동 변환 처리하는 view -->
+	<bean id="pageJsonReport" class="org.springframework.web.servlet.view.json.MappingJacksonJsonView">
+		<property name="contentType" value="text/html;charset=utf-8"/>
+	</bean>
+	 <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+      	destroy-method="close">
+      	<property name="driverClassName" value="${db_driver}"/>
+      	<property name="url"  value="${db_ip}"/>
+      	<property name="username"  value="${db_id}"/>
+      	<property name="password"  value="${db_pass}"/>
+      </bean>
+		
+	<bean id="sqlSessionFactory"
+		class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="configLocation"
+			value="classpath:resource/mybatis.Spring.xml" />
+	</bean>
+	
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="springweb.a03_data.dao" />
+	</bean>
+</beans>       
